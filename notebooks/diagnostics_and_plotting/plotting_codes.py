@@ -42,10 +42,12 @@ def plot_mean_normalized_and_linear_fit(pandas_df, legend_label):
         y_pred.append(temp_y)
 
     p = figure(title = 'Mean PF value Normalized to Mean First Observation and Duration',x_axis_type='datetime',plot_width=800, plot_height=300)
-    if 'Fullframe' in legend_label:
+    if 'Full-frame' in legend_label:
         p.y_range=Range1d(0.95, 1.05)
     else:
-        p.y_range=Range1d(0.9, 1.05)
+        p.y_range=Range1d(0.95, 1.05)
     p.circle(x_datetime, y,size = 4, legend_label = legend_label)
     p.line(x_datetime,y_pred,color='red')#,legend_label='y = ' + str(slope) +' x + '+ str(round(intercept,6)))
+    p.xaxis.axis_label = "Observation Date"
+    p.yaxis.axis_label = "Normalized Mean Post-flash Value"
     show(p)
