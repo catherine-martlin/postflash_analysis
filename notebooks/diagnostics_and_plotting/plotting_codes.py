@@ -28,11 +28,16 @@ def plot_mean_normalized_and_linear_fit(pandas_df, legend_label):
     print("Slope: ", popt[0])
     perr = np.sqrt(np.diag(pcov))
     print(perr)
-    print(perr[0]/popt[0])
+    #print(perr[0]/popt[0])
 
     # Find the slope and intercept from the model
     slope = popt[0] # Takes the first element of the array
     intercept = popt[1]
+    
+    sigma0 = np.sqrt(pcov[0,0])
+    sigma1 = np.sqrt(pcov[1,1])
+    print(sigma0)
+    print(sigma1)
 
     # Make the regression line
     y_pred = []
