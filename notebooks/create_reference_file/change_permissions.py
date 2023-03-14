@@ -1,3 +1,6 @@
+import os
+import glob
+
 def change_permissions(path_to_files):
     """Change permissions of the output files and directories.
         Code structure borrowed from cal_uvis_make_darks/FileIO.py.
