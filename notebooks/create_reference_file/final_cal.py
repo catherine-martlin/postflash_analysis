@@ -1,174 +1,153 @@
-#Filename: final_cal.py
-#Description: This makes the final adjustments to the pf file to make it a referance file.
-#Date: August 22, 2016
-#Author: Heather Kurtz
+"""Create the final post-flash reference file from the stacked fits files. 
+
+
+Authors
+-------
+    Catherine Martlin, 2023
+    Heather Kurtz, 2016
+Use
+---
+    This module is intended to be called by ``.py``
+    as part of the UVIS Post-flash reference file creation.
+"""
+
+import csv
+import glob
+import os
 
 from astropy.io import fits
 import numpy as np
-import csv
-import os
-import glob
 
-def final_cal(shutter, currentfile, error, a_flag):
+def final_cal(filename, prior_pf_file, error_file, shutter_flag, current):
+    
+    # Read in the two fits files
+    pf_hdulist= fits.open(filename)
+    data1=pf_hdulist[0].data
+    data4=pf_hdulist[1].data
+    
+    pf_hdulist.close
+    
+    pf_hdulist_error= fits.open(error_file)
+    error1=pf_hdulist_error[0].data
+    error4=pf_hdulist_error[1].data
+    
+    pf_hdulist_error.close
+    
+    # read in the header of the current reference file
+    
+    prior_pf_file = fits.open(prior_pf_file)
+    pf_hdr = prior_pf_file[0].header
+    pf_hdr1 = prior_pf_file[1].header
+    pf_hdr2 = prior_pf_file[2].header
+    pf_hdr3 = prior_pf_file[3].header
+    pf_hdr4 = prior_pf_file[4].header
+    pf_hdr5 = prior_pf_file[5].header
+    pf_hdr6 = prior_pf_file[6].header
+    
+    # Divide by the exposure time, multiply by the scale factor and by the gain:
+    if shutter_flag == 'B':
+        if current == 'low':
+            data1_scaled=((data1/100.00)*0.03623)*1.56
+            data4_scaled=((data4/100.00)*0.03623)*1.56
 
+            error1_cor=(((error1*0.03623))/100.0)
+            error4_cor=(((error4*0.03623))/100.0)
+        
+        elif current == 'med':
+            data1_scaled=((data1/100.00)*0.03623*28.96)*1.56
+            data4_scaled=((data4/100.00)*0.03623*28.96)*1.56
 
-	
-	stats=[]
-	
-	# reads in the fits files B
-	hdulistB= fits.open(shutterB)
-	dataB1=hdulistB[0].data
-	dataB4=hdulistB[1].data
-	
-	hdulistB.close
-	
-	hdulistBe= fits.open(errorB)
-	errorB1=hdulistBe[0].data
-	errorB4=hdulistBe[1].data
-	
-	hdulistBe.close
-	
-	# read in the header of the current reference file
-	
-	hdulistc= fits.open(currentfileB)
-	Bhdr=hdulistc[0].header
-	Bhdr1=hdulistc[1].header
-	Bhdr2=hdulistc[2].header
-	Bhdr3=hdulistc[3].header
-	Bhdr4=hdulistc[4].header
-	Bhdr5=hdulistc[5].header
-	Bhdr6=hdulistc[6].header
-	
-	#divids that data by the exposure time, multiplies by the scale factor and multiplies by the gain
-	if a_flag == 'B':
-	
-		dataB1_low=((dataB1/100.00)*0.03623)*1.56
-		dataB4_low=((dataB4/100.00)*0.03623)*1.56
-		
-		errorB1_cor=((errorB1*0.03623)/100.0)
-		errorB4_cor=((errorB4*0.03623)/100.0)
+            error1_cor=(((error1*0.03623)*28.96)/100.0)
+            error4_cor=(((error4*0.03623)*28.96)/100.0) 
 
-	elif a_flag == 'A':
-		dataB1_low=((dataB1/100.00)*0.03639)*1.56
-		dataB4_low=((dataB4/100.00)*0.03639)*1.56
+    elif shutter_flag == 'A':
+        if current == 'low':
+            data1_scaled=((data1/100.00)*0.03639)*1.56
+            data4_scaled=((data4/100.00)*0.03639)*1.56
 
-		errorB1_cor=((errorB1*0.03639)/100.0)
-		errorB4_cor=((errorB4*0.03639)/100.0)
-	
-	#creates the other extentions needed for the fits referance file
-	dq1=np.zeros((2070,4206))
-	dq2=np.zeros((2070,4206))
-	
-	#adds zeros in rows to data to obtain the correct form
-	c=np.zeros((19, 4096))
-	dataB1_19=np.concatenate((dataB1_low,c), axis=0)
-	
-	dataB4_19=np.concatenate((c,dataB4_low), axis=0)
-	
-	errorB1_19=np.concatenate((errorB1_cor,c), axis=0)
-	
-	errorB4_19=np.concatenate((c,errorB4_cor), axis=0)
-	
-	#this makes the edges have 25 coloms of zeros
-	d=np.zeros((2070,25 ))
-	
-	dataB4_f25=np.concatenate((dataB4_19,d), axis=1)
-	dataB1_f25=np.concatenate((dataB1_19,d), axis=1)
-	
-	dataB4_e25=np.concatenate((d,dataB4_f25), axis=1)
-	dataB1_e25=np.concatenate((d,dataB1_f25), axis=1)
-	
-	errorB4_f25=np.concatenate((errorB4_19,d), axis=1)
-	errorB1_f25=np.concatenate((errorB1_19,d), axis=1)
-	
-	errorB4_e25=np.concatenate((d,errorB4_f25), axis=1)
-	errorB1_e25=np.concatenate((d,errorB1_f25), axis=1)
-	
-	#add 60 coloms of zeros in the middle
-	idx=[]
-	for i in range(60):
-	    idx.append(2073)
-	
-	#idx= list(range(2073,2133))
+            error1_cor=((error1*0.03639)/100.0)
+            error4_cor=((error4*0.03639)/100.0)
+            
+        elif current == 'med':
+            data1_scaled=((data1/100.00)*0.03639*28.96)*1.56
+            data4_scaled=((data4/100.00)*0.03639*28.96)*1.56
 
-	dataB4_all=np.insert(dataB4_e25, idx, 0, axis=1)
-	dataB1_all=np.insert(dataB1_e25, idx, 0, axis=1)
-	
-	errorB4_all=np.insert(errorB4_e25, idx, 0, axis=1)
-	errorB1_all=np.insert(errorB1_e25, idx, 0, axis=1)
-	
-	    
-	print('dataB4')
-	print('Min:', np.min(dataB4_all))
-	print('Max:', np.max(dataB4_all))
-	print('Mean', np.mean(dataB4_all))
-	print('Stdev:', np.std(dataB4_all))      
-	    
-	print('dataB1')
-	print('Min:', np.min(dataB1_all))
-	print('Max:', np.max(dataB1_all))
-	print('Mean', np.mean(dataB1_all))
-	print('Stdev:', np.std(dataB1_all)) 
-	
-	#write out the new files!!!!!
-	#each individual extention
-	#fits.writeto(outfile1,dataA1_all )
-	outfile1= 'B4m.fits'
-	#fits.writeto(outfile1,dataB4_all )
-	outfile1= 'B1m.fits'
-	#fits.writeto(outfile1,dataB1_all )
-	
-	
-	#shutter B all together with all 7 extensions including the header
-	cal_out_file = shutterB[:-5] + 'final_cal.fits' 
-	prihdu = fits.PrimaryHDU(header=Bhdr)
-	
-	single_extension1=fits.ImageHDU(data=dataB1_all.astype(np.float32),header=Bhdr1)
-	single_extension2=fits.ImageHDU(data=errorB1_all.astype(np.float32),header=Bhdr2)
-	single_extension3=fits.ImageHDU(data=dq1.astype(np.float32),header=Bhdr3)
-	
-	single_extension4=fits.ImageHDU(data=dataB4_all.astype(np.float32),header=Bhdr4)
-	single_extension5=fits.ImageHDU(data=errorB4_all.astype(np.float32),header=Bhdr5)
-	single_extension6=fits.ImageHDU(data=dq2.astype(np.float32),header=Bhdr6)
-	
-	all_extensions=[prihdu,single_extension1, single_extension2, single_extension3,single_extension4,single_extension5,single_extension6]
-	myhdulist=fits.HDUList(all_extensions)
-	myhdulist[0]._bitpix = 16
-	myhdulist.writeto(cal_out_file, overwrite=True)
-	
-	hdulistc.close
+            error1_cor=(((error1*0.03639)*28.96)/100.0)
+            error4_cor=(((error4*0.03639)*28.96)/100.0)
+    
+    # Creates other extentions needed by the reference file
+    dq1=np.zeros((2070,4206))
+    dq2=np.zeros((2070,4206))
+    
+    # Add in rows of zeros for proper padding
+    c=np.zeros((19, 4096))
+    data1_19=np.concatenate((data1_scaled,c), axis=0)
+    
+    data4_19=np.concatenate((c,data4_scaled), axis=0)
+    
+    error1_19=np.concatenate((error1_cor,c), axis=0)
+    
+    error4_19=np.concatenate((c,error4_cor), axis=0)
+    
+    # Add 25 rows of zero to the edges
+    d=np.zeros((2070,25 ))
+    
+    data4_f25=np.concatenate((data4_19,d), axis=1)
+    data1_f25=np.concatenate((data1_19,d), axis=1)
+    
+    data4_e25=np.concatenate((d,data4_f25), axis=1)
+    data1_e25=np.concatenate((d,data1_f25), axis=1)
+    
+    error4_f25=np.concatenate((error4_19,d), axis=1)
+    error1_f25=np.concatenate((error1_19,d), axis=1)
+    
+    error4_e25=np.concatenate((d,error4_f25), axis=1)
+    error1_e25=np.concatenate((d,error1_f25), axis=1)
+    
+    # Add in 60 columns of zeros in the middle
+    idx=[]
+    for i in range(60):
+        idx.append(2073)
 
-
-def main():
-	
-	#gets current directory
-	current = os.getcwd()
-	
-	base_path = '/grp/hst/wfc3v/hkurtz/pf_2020/analysis_2/shutter_b/med_100/'
-	os.chdir(base_path)
-	
-	files= glob.glob('*median.fits')
-	print(len(files))
-	currentfileB='wc52031pi_fls.fits'
-	flag = 'B'
-
-	for f in files:
-		errorB= f[:-11] + 'error.fits'
-		final_cal(f,currentfileB,errorB,flag)
-
-
-	base_path2 = '/grp/hst/wfc3v/hkurtz/pf_2020/analysis_2/shutter_a/med_100/'
-	os.chdir(base_path2)
-	
-	files= glob.glob('*median.fits')
-	print(len(files))
-	currentfileA='wc52031oi_fls.fits'
-	flag = 'A'
-
-	for fl in files:
-		errorA= fl[:-11] + 'error.fits'
-		final_cal(fl,currentfileA,errorA,flag)
-
-	os.chdir(current)
-	
-main()
+    data4_all=np.insert(data4_e25, idx, 0, axis=1)
+    data1_all=np.insert(data1_e25, idx, 0, axis=1)
+    
+    error4_all=np.insert(error4_e25, idx, 0, axis=1)
+    error1_all=np.insert(error1_e25, idx, 0, axis=1)
+      
+    print('data_4')
+    print('Min:', np.min(data4_all))
+    print('Max:', np.max(data4_all))
+    print('Mean', np.mean(data4_all))
+    print('Stdev:', np.std(data4_all))      
+        
+    print('data_1')
+    print('Min:', np.min(data1_all))
+    print('Max:', np.max(data1_all))
+    print('Mean', np.mean(data1_all))
+    print('Stdev:', np.std(data1_all))    
+    
+    # All data together with the 7 extensions and the header
+    cal_out_file = filename[:-5] + '_final_cal.fits'
+    
+    prihdu = fits.PrimaryHDU(header=pf_hdr)
+    
+    single_extension1 = fits.ImageHDU(data = data1_all.astype(np.float32), header = pf_hdr1)
+    single_extension2 = fits.ImageHDU(data = error1_all.astype(np.float32), header = pf_hdr2)
+    single_extension3 = fits.ImageHDU(data = dq1.astype(np.float32), header = pf_hdr3)
+    
+    single_extension4 = fits.ImageHDU(data = data4_all.astype(np.float32), header = pf_hdr4)
+    single_extension5 = fits.ImageHDU(data = error4_all.astype(np.float32), header = pf_hdr5)
+    single_extension6 = fits.ImageHDU(data = dq2.astype(np.float32), header = pf_hdr6)
+    
+    all_extensions = [prihdu, single_extension1, single_extension2, 
+                      single_extension3, single_extension4, single_extension5, 
+                      single_extension6]
+    
+    myhdulist = fits.HDUList(all_extensions)
+    
+    myhdulist[0]._bitpix = 16
+    
+    myhdulist.writeto(cal_out_file, overwrite=True)
+    
+    prior_pf_file.close
