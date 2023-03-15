@@ -47,8 +47,29 @@ def cal_uvis_make_postflash_main():
     logging.info('')
     logging.info('')
     logging.info('')
+    #years = [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022]
+    cadence = 1
+    years=[2022]
+
+    for curr in ['low','med']:
+        for shutter in ['A','B']:
+            for y in years:
+                #A_shutter_paths_year, A_shutter_outfile_year, A_shutter_error_outfile_year, A_shutter_fullframe_pf_year = create_reference_file(y, working_directory, today, cadence, postflash_data, shutter=shutter)
+                #B_shutter_paths_year, B_shutter_outfile_year, B_shutter_error_outfile_year, B_shutter_fullframe_pf_year = create_reference_file(y, working_directory, today, cadence, postflash_data, shutter=shutter)
+                #stack(A_shutter_paths_year, A_shutter_outfile_year, A_shutter_error_outfile_year)
+                #stack(B_shutter_paths_year, B_shutter_outfile_year, B_shutter_error_outfile_year)
+                #filename = working_directory + '2022_fullframe_B_flc_stack_2023-03-13_med.fits'
+                #prior_pf_file = working_directory + '6c82014gi_fls.fits' # 2021 low B
+                #error_file = working_directory + '2022_fullframe_B_flc_error_stack_2023-03-13_med.fits'
+                print(curr)
+                print(shutter)
+                print(y)
+                #final_cal(filename, prior_pf_file, error_file, shutter_flag=shutter, current=curr)
     
-def stack(list_of_files,outfile,error_file):
+    change_permissions(working_directory)
+        
+        
+def stack(list_of_files, outfile, error_file):
     """This function will stack a set of FITS images and create a masked
     median file along with an error file.
     
