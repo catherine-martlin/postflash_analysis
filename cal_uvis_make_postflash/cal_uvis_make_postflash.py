@@ -14,8 +14,7 @@ Authors
 Use
 ---
 
-    This script is intended to be executed weekly via a cron job or via
-    the command line as such:
+    This script is intended to be executed via the command line as such:
     ::
         python cal_uvis_make_postflash.py
 """
@@ -39,7 +38,7 @@ from pyql.logging.logging_functions import log_fail
 @log_fail
 @log_info
 def cal_uvis_make_postflash_main():
-    """
+    """The wrapper of the postflash creation.
 
     Parameters
     ----------
@@ -48,10 +47,9 @@ def cal_uvis_make_postflash_main():
     logging.info('')
     logging.info('')
     logging.info('')
-
     
 def stack(list_of_files,outfile,error_file):
-    '''This function will stack a set of FITS images and create a masked
+    """This function will stack a set of FITS images and create a masked
     median file along with an error file.
     
     Parameters
@@ -67,13 +65,14 @@ def stack(list_of_files,outfile,error_file):
     This is the path and filename you want for your
         outfile of the calcuated error.
     
-    '''
-    #gets the file size
+    """
+    # Gets the file size
     hdr = fits.getheader(list_of_files[0], 1)
     nx = hdr['NAXIS1']
     ny = hdr['NAXIS2']
     nf = len(list_of_files)
-    # Setting up the empty data, rms, and error arrays and getting the data
+    
+    # Setting up the empty data, rms, and error arrays
     data_array_1 = np.empty((nf, ny, nx), dtype=float)
     data_array_2 = np.empty((nf, ny, nx), dtype=float)
     set_data=fits.getdata(list_of_files[0], 1)
@@ -85,44 +84,46 @@ def stack(list_of_files,outfile,error_file):
     total_error_2 = np.zeros_like(set_data, dtype=float)
     
     for i , f in enumerate(list_of_files):
-        #read in the data and the DQs from the .fits for both extensions
-        data_1=fits.getdata(f, 1)
-        data_2=fits.getdata(f, 4)
-        error_1=fits.getdata(f, 2)
-        error_2=fits.getdata(f, 5)
-        DQ_1=fits.getdata(f, 3)
-        DQ_2=fits.getdata(f, 6)
+        #Read in the data and the DQs from the FITS for both extensions
+        data_1 = fits.getdata(f, 1)
+        data_2 = fits.getdata(f, 4)
+        error_1 = fits.getdata(f, 2)
+        error_2 = fits.getdata(f, 5)
+        DQ_1 = fits.getdata(f, 3)
+        DQ_2 = fits.getdata(f, 6)
         
-        #set the mask to a boolean array of the same size and shape as the data array
-        mask_1=np.zeros_like(data_1, dtype=bool)
-        mask_2=np.zeros_like(data_2, dtype=bool)
+        #Set the mask to a boolean array of the same size and shape as the data array
+        mask_1 = np.zeros_like(data_1, dtype=bool)
+        mask_2 = np.zeros_like(data_2, dtype=bool)
         
-        #I set the DQ to true because in the masking step it is understood that 1 will
-        #be masked and zeros are fine so the logic in this step must be reversed.
-        #create the mask for the data by setting any pixel with the flag value to true.
+        #DQ = true because in the masking step a 1 will be masked and 0 allowed,
+        #so the logic in this step must be reversed.
+        #Create a mask for the data by setting any pixel with the flag value to True.
         mask_1[DQ_1>=2**13] = True
         mask_2[DQ_2>=2**13] = True
         error_1[(0<DQ_1 & (DQ_1<2**13))] = 0.00001
         error_2[(0<DQ_2& (DQ_2<2**13))] = 0.00001
         error_1_sq = error_1**2
         error_2_sq = error_2**2
-        #mask the data
-        masked_data_1= ma.array(data=data_1, mask=mask_1)
-        masked_data_2= ma.array(data=data_2, mask=mask_2)
-        #resets the data to array for stacking
+        
+        #Mask the data
+        masked_data_1 = ma.array(data=data_1, mask=mask_1)
+        masked_data_2 = ma.array(data=data_2, mask=mask_2)
+        
+        #Resets the data to an array for stacking
         data_array_1[i, :, :] = masked_data_1
         rms_1[i] = masked_data_1.std()
         data_array_2[i, :, :] = masked_data_2
         rms_2[i] = masked_data_2.std()
-        total_error_1=total_error_1+(error_1_sq)
-        total_error_2=total_error_2+(error_2_sq)
+        total_error_1 = total_error_1+(error_1_sq)
+        total_error_2 = total_error_2+(error_2_sq)
         
-    sr_total_error_1=np.sqrt(total_error_1)
-    sr_total_error_2=np.sqrt(total_error_2)
-    fin_error_1=(sr_total_error_1/(float(len(list_of_files))))
-    fin_error_2=(sr_total_error_2/(float(len(list_of_files))))
+    sr_total_error_1 = np.sqrt(total_error_1)
+    sr_total_error_2 = np.sqrt(total_error_2)
+    fin_error_1 = (sr_total_error_1/(float(len(list_of_files))))
+    fin_error_2 = (sr_total_error_2/(float(len(list_of_files))))
     
-    #create the median image
+    #Create the median image
     image_median_1 = np.median(data_array_1, axis=0)
     image_median_2 = np.median(data_array_2, axis=0)
     new_hdul = fits.HDUList()
@@ -130,7 +131,7 @@ def stack(list_of_files,outfile,error_file):
     new_hdul.append(fits.ImageHDU(image_median_2))
     new_hdul.writeto(outfile, overwrite=True)
     
-    #error
+    #Error
     new_hdul = fits.HDUList()
     new_hdul.append(fits.ImageHDU(fin_error_1))
     new_hdul.append(fits.ImageHDU(fin_error_2))
@@ -171,9 +172,11 @@ def create_reference_file(year, working_directory, today, cadence, postflash_dat
     """
     fullframe_pf = postflash_data.loc[(postflash_data['subarray'] == False) & (postflash_data['shutter'] == '{}'.format(shutter)) & (postflash_data['flash_cur'] == 'MED') & (postflash_data['flash_dur'] == 100.0)]
     if cadence == 1:
+        # Allow 2012 reference file to be created with some 2013 data
         if year == 2012:
             fullframe_pf_year = fullframe_pf[(fullframe_pf['datetime'] > '{}-01-01 00:00:00'.format(str(year))) & (fullframe_pf['datetime'] < '{}-11-14 00:00:00'.format(str(year+1)))]
         else:
+        # All single years besides 2012
             fullframe_pf_year = fullframe_pf[(fullframe_pf['datetime'] > '{}-01-01 00:00:00'.format(str(year))) & (fullframe_pf['datetime'] < '{}-01-01 00:00:00'.format(str(year+1)))]
             paths_year = fullframe_pf_year.path.tolist()
             print(len(paths_year))
@@ -181,6 +184,7 @@ def create_reference_file(year, working_directory, today, cadence, postflash_dat
             error_outfile_year = '{}{}_fullframe_{}_flc_error_stack_{}.fits'.format(working_directory,str(year), shutter, today)
             print(outfile_year)
     else:
+        # Create reference files of different year cadences
         fullframe_pf = postflash_data.loc[(postflash_data['subarray'] == False) & (postflash_data['shutter'] == '{}'.format(shutter)) & (postflash_data['flash_cur'] == 'MED') & (postflash_data['flash_dur'] == 100.0)]
         fullframe_pf_year = fullframe_pf[(fullframe_pf['datetime'] > '{}-01-01 00:00:00'.format(str(year))) & (fullframe_pf['datetime'] < '{}-01-01 00:00:00'.format(str(year+cadence)))]
         paths_year = fullframe_pf_year.path.tolist()
@@ -192,20 +196,40 @@ def create_reference_file(year, working_directory, today, cadence, postflash_dat
     return paths_year, outfile_year, error_outfile_year, fullframe_pf_year
 
 def final_cal(filename, prior_pf_file, error_file, shutter_flag, current):
-    # Read in the two fits files
-    pf_hdulist= fits.open(filename)
-    data1=pf_hdulist[0].data
-    data4=pf_hdulist[1].data
+    """This function will take the individual data and error fits files and
+    create a single output FITS file. The header of that file will need to be
+    updated and then the file can be delivered to CRDS.
     
+    Parameters
+    ----------
+    filename: str
+        
+    
+    prior_pf_file: str
+        
+    
+    error_file: str
+        
+    
+    shutter_flag: str
+        A or B
+    
+    current: str
+        'low' or 'med'
+        
+    """
+    # Read in the data and error files
+    pf_hdulist = fits.open(filename)
+    data1 = pf_hdulist[0].data
+    data4 = pf_hdulist[1].data
     pf_hdulist.close
     
-    pf_hdulist_error= fits.open(error_file)
-    error1=pf_hdulist_error[0].data
-    error4=pf_hdulist_error[1].data
-    
+    pf_hdulist_error = fits.open(error_file)
+    error1 = pf_hdulist_error[0].data
+    error4 = pf_hdulist_error[1].data
     pf_hdulist_error.close
     
-    # read in the header of the current reference file
+    # Read in the header of the current reference file
     prior_pf_file = fits.open(prior_pf_file)
     pf_hdr = prior_pf_file[0].header
     pf_hdr1 = prior_pf_file[1].header
@@ -215,76 +239,75 @@ def final_cal(filename, prior_pf_file, error_file, shutter_flag, current):
     pf_hdr5 = prior_pf_file[5].header
     pf_hdr6 = prior_pf_file[6].header
     
-    # Divide by the exposure time, multiply by the scale factor and by the gain:
+    # Divide by the exposure time, multiply by the scale factor and
+    # multiply by the gain:
     if shutter_flag == 'B':
         if current == 'low':
             data1_scaled=((data1/100.00)*0.03623)*1.56
             data4_scaled=((data4/100.00)*0.03623)*1.56
 
-            error1_cor=(((error1*0.03623))/100.0)
-            error4_cor=(((error4*0.03623))/100.0)
+            error1_cor = (((error1*0.03623))/100.0)
+            error4_cor = (((error4*0.03623))/100.0)
         
         elif current == 'med':
-            data1_scaled=((data1/100.00)*0.03623*28.96)*1.56
-            data4_scaled=((data4/100.00)*0.03623*28.96)*1.56
+            data1_scaled = ((data1/100.00)*0.03623*28.96)*1.56
+            data4_scaled = ((data4/100.00)*0.03623*28.96)*1.56
 
-            error1_cor=(((error1*0.03623)*28.96)/100.0)
-            error4_cor=(((error4*0.03623)*28.96)/100.0)
+            error1_cor = (((error1*0.03623)*28.96)/100.0)
+            error4_cor = (((error4*0.03623)*28.96)/100.0)
 
     elif shutter_flag == 'A':
         if current == 'low':
-            data1_scaled=((data1/100.00)*0.03639)*1.56
-            data4_scaled=((data4/100.00)*0.03639)*1.56
+            data1_scaled = ((data1/100.00)*0.03639)*1.56
+            data4_scaled = ((data4/100.00)*0.03639)*1.56
 
-            error1_cor=((error1*0.03639)/100.0)
-            error4_cor=((error4*0.03639)/100.0)
+            error1_cor = ((error1*0.03639)/100.0)
+            error4_cor = ((error4*0.03639)/100.0)
             
         elif current == 'med':
-            data1_scaled=((data1/100.00)*0.03639*28.96)*1.56
-            data4_scaled=((data4/100.00)*0.03639*28.96)*1.56
+            data1_scaled = ((data1/100.00)*0.03639*28.96)*1.56
+            data4_scaled = ((data4/100.00)*0.03639*28.96)*1.56
 
-            error1_cor=(((error1*0.03639)*28.96)/100.0)
-            error4_cor=(((error4*0.03639)*28.96)/100.0)
+            error1_cor = (((error1*0.03639)*28.96)/100.0)
+            error4_cor = (((error4*0.03639)*28.96)/100.0)
     
     # Creates other extentions needed by the reference file
-    dq1=np.zeros((2070,4206))
-    dq2=np.zeros((2070,4206))
+    dq1 = np.zeros((2070,4206))
+    dq2 = np.zeros((2070,4206))
     
     # Add in rows of zeros for proper padding
-    c=np.zeros((19, 4096))
-    data1_19=np.concatenate((data1_scaled,c), axis=0)
+    c = np.zeros((19, 4096))
+    data1_19 = np.concatenate((data1_scaled,c), axis=0)
+    data4_19 = np.concatenate((c,data4_scaled), axis=0)
     
-    data4_19=np.concatenate((c,data4_scaled), axis=0)
-    
-    error1_19=np.concatenate((error1_cor,c), axis=0)
-    
-    error4_19=np.concatenate((c,error4_cor), axis=0)
+    error1_19 = np.concatenate((error1_cor,c), axis=0)
+    error4_19 = np.concatenate((c,error4_cor), axis=0)
     
     # Add 25 rows of zero to the edges
     d=np.zeros((2070,25 ))
     
-    data4_f25=np.concatenate((data4_19,d), axis=1)
-    data1_f25=np.concatenate((data1_19,d), axis=1)
+    data4_f25 = np.concatenate((data4_19,d), axis=1)
+    data1_f25 = np.concatenate((data1_19,d), axis=1)
     
-    data4_e25=np.concatenate((d,data4_f25), axis=1)
-    data1_e25=np.concatenate((d,data1_f25), axis=1)
+    data4_e25 = np.concatenate((d,data4_f25), axis=1)
+    data1_e25 = np.concatenate((d,data1_f25), axis=1)
     
-    error4_f25=np.concatenate((error4_19,d), axis=1)
-    error1_f25=np.concatenate((error1_19,d), axis=1)
+    error4_f25 = np.concatenate((error4_19,d), axis=1)
+    error1_f25 = np.concatenate((error1_19,d), axis=1)
     
-    error4_e25=np.concatenate((d,error4_f25), axis=1)
-    error1_e25=np.concatenate((d,error1_f25), axis=1)
+    error4_e25 = np.concatenate((d,error4_f25), axis=1)
+    error1_e25 = np.concatenate((d,error1_f25), axis=1)
     
     # Add in 60 columns of zeros in the middle
     idx=[]
     for i in range(60):
         idx.append(2073)
 
-    data4_all=np.insert(data4_e25, idx, 0, axis=1)
-    data1_all=np.insert(data1_e25, idx, 0, axis=1)
+    data4_all = np.insert(data4_e25, idx, 0, axis=1)
+    data1_all = np.insert(data1_e25, idx, 0, axis=1)
     
-    error4_all=np.insert(error4_e25, idx, 0, axis=1)
-    error1_all=np.insert(error1_e25, idx, 0, axis=1)
+    error4_all = np.insert(error4_e25, idx, 0, axis=1)
+    error1_all = np.insert(error1_e25, idx, 0, axis=1)
       
     print('data_4')
     print('Min:', np.min(data4_all))
@@ -316,11 +339,8 @@ def final_cal(filename, prior_pf_file, error_file, shutter_flag, current):
                       single_extension6]
     
     myhdulist = fits.HDUList(all_extensions)
-    
     myhdulist[0]._bitpix = 16
-    
     myhdulist.writeto(cal_out_file, overwrite=True)
-    
     prior_pf_file.close
 
 if __name__ == '__main__':
