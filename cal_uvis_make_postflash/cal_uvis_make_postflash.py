@@ -4,7 +4,7 @@
 
 This script serves as a pipeline to create WFC3 UVIS post-flash reference
 files and is a wrapper around several modules that perform subtasks of
-the postflash reference file creation algorithm.
+the post-flash reference file creation algorithm.
 
 Authors
 -------
@@ -38,7 +38,7 @@ from pyql.logging.logging_functions import log_fail
 @log_fail
 @log_info
 def cal_uvis_make_postflash_main():
-    """The wrapper of the postflash creation.
+    """The wrapper of the post-flash creation.
 
     Parameters
     ----------
